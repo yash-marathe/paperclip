@@ -254,7 +254,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const adapterType = isCreate
     ? props.values.adapterType
     : overlay.adapterType ?? props.agent.adapterType;
-  const isLocal = adapterType === "claude_local" || adapterType === "codex_local";
+  const isLocal = adapterType === "claude_local" || adapterType === "codex_local" || adapterType === "opencode_local";
   const uiAdapter = useMemo(() => getUIAdapter(adapterType), [adapterType]);
 
   // Fetch adapter models for the effective adapter type
@@ -313,7 +313,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     ? val!.model
     : eff("adapterConfig", "model", String(config.model ?? ""));
 
-  const thinkingEffortKey = adapterType === "codex_local" ? "modelReasoningEffort" : "effort";
+  const thinkingEffortKey = adapterType === "codex_local" ? "modelReasoningEffort" : adapterType === "opencode_local" ? "variant" : "effort";
   const thinkingEffortOptions =
     adapterType === "codex_local" ? codexThinkingEffortOptions : claudeThinkingEffortOptions;
   const currentThinkingEffort = isCreate
@@ -324,7 +324,9 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
           "modelReasoningEffort",
           String(config.modelReasoningEffort ?? config.reasoningEffort ?? ""),
         )
-      : eff("adapterConfig", "effort", String(config.effort ?? ""));
+      : adapterType === "opencode_local"
+        ? eff("adapterConfig", "variant", String(config.variant ?? ""))
+        : eff("adapterConfig", "effort", String(config.effort ?? ""));
   const codexSearchEnabled = adapterType === "codex_local"
     ? (isCreate ? Boolean(val!.search) : eff("adapterConfig", "search", Boolean(config.search)))
     : false;
@@ -549,7 +551,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                   }
                   immediate
                   className={inputClass}
-                  placeholder={adapterType === "codex_local" ? "codex" : "claude"}
+                  placeholder={adapterType === "codex_local" ? "codex" : adapterType === "opencode_local" ? "opencode" : "claude"}
                 />
               </Field>
 
@@ -817,7 +819,7 @@ function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmentTestRe
 
 /* ---- Internal sub-components ---- */
 
-const ENABLED_ADAPTER_TYPES = new Set(["claude_local", "codex_local"]);
+const ENABLED_ADAPTER_TYPES = new Set(["claude_local", "codex_local", "opencode_local"]);
 
 /** Display list includes all real adapter types plus UI-only coming-soon entries. */
 const ADAPTER_DISPLAY_LIST: { value: string; label: string; comingSoon: boolean }[] = [
@@ -1195,7 +1197,19 @@ function ModelDropdown({
                 <span className="text-xs text-muted-foreground font-mono">{m.id}</span>
               </button>
             ))}
-            {filteredModels.length === 0 && (
+            {filteredModels.length === 0 && modelSearch.trim() && (
+              <button
+                className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50"
+                onClick={() => {
+                  onChange(modelSearch.trim());
+                  onOpenChange(false);
+                }}
+              >
+                <span>Use &ldquo;{modelSearch.trim()}&rdquo;</span>
+                <span className="text-xs text-muted-foreground font-mono">{modelSearch.trim()}</span>
+              </button>
+            )}
+            {filteredModels.length === 0 && !modelSearch.trim() && (
               <p className="px-2 py-1.5 text-xs text-muted-foreground">No models found.</p>
             )}
           </div>

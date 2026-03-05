@@ -2029,6 +2029,38 @@ export function heartbeatService(db: Db) {
 
     tickTimers: async (now = new Date()) => {
       const allAgents = await db.select().from(agents);
+
+      // Pre-fetch the set of agents that have at least one actionable issue
+      // (status = todo, in_progress, or blocked). Timer heartbeats are skipped
+      // for agents with no pending work to avoid wasting tokens on empty runs.
+      const ACTIONABLE_ISSUE_STATUSES = ["todo", "in_progress", "blocked"];
+      const agentsWithWork = new Set(
+        (
+          await db
+            .selectDistinct({ agentId: issues.assigneeAgentId })
+            .from(issues)
+            .where(
+              and(
+                sql`${issues.assigneeAgentId} IS NOT NULL`,
+                inArray(issues.status, ACTIONABLE_ISSUE_STATUSES),
+              ),
+            )
+        )
+          .map((row) => row.agentId)
+          .filter((id): id is string => id !== null),
+      );
+
+      // Also check for pending (not yet promoted) deferred wakeup requests,
+      // so agents with queued follow-up work still get their timer tick.
+      const agentsWithDeferredWakes = new Set(
+        (
+          await db
+            .selectDistinct({ agentId: agentWakeupRequests.agentId })
+            .from(agentWakeupRequests)
+            .where(eq(agentWakeupRequests.status, "pending"))
+        ).map((row) => row.agentId),
+      );
+
       let checked = 0;
       let enqueued = 0;
       let skipped = 0;
@@ -2039,6 +2071,15 @@ export function heartbeatService(db: Db) {
         if (!policy.enabled || policy.intervalSec <= 0) continue;
 
         checked += 1;
+
+        // Skip timer heartbeat if the agent has no actionable issues and no
+        // deferred wakeup requests. This prevents empty runs that consume
+        // tokens just to determine there is nothing to do.
+        if (!agentsWithWork.has(agent.id) && !agentsWithDeferredWakes.has(agent.id)) {
+          skipped += 1;
+          continue;
+        }
+
         const baseline = new Date(agent.lastHeartbeatAt ?? agent.createdAt).getTime();
         const elapsedMs = now.getTime() - baseline;
         if (elapsedMs < policy.intervalSec * 1000) continue;

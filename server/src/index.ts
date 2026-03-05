@@ -50,6 +50,17 @@ type EmbeddedPostgresCtor = new (opts: {
 }) => EmbeddedPostgresInstance;
 
 const config = loadConfig();
+
+// Auto-generate PAPERCLIP_AGENT_JWT_SECRET in local_trusted mode if not set.
+// This ensures local adapters (claude_local, codex_local, opencode_local) can
+// authenticate agents via short-lived JWTs without requiring manual setup.
+if (!process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim() && config.deploymentMode === "local_trusted") {
+  const { randomBytes } = await import("node:crypto");
+  const autoSecret = randomBytes(32).toString("hex");
+  process.env.PAPERCLIP_AGENT_JWT_SECRET = autoSecret;
+  logger.info("Auto-generated PAPERCLIP_AGENT_JWT_SECRET for local_trusted mode");
+}
+
 if (process.env.PAPERCLIP_SECRETS_PROVIDER === undefined) {
   process.env.PAPERCLIP_SECRETS_PROVIDER = config.secretsProvider;
 }

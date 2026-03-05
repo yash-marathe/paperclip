@@ -535,6 +535,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
         for (const mentionedId of mentionedIds) {
           if (wakeups.has(mentionedId)) continue;
+          // Skip self-mention wake: don't let an agent wake itself via @-mention
+          if (actor.actorType === "agent" && actor.agentId === mentionedId) continue;
           wakeups.set(mentionedId, {
             source: "automation",
             triggerDetail: "system",
@@ -820,7 +822,11 @@ export function issueRoutes(db: Db, storage: StorageService) {
     void (async () => {
       const wakeups = new Map<string, Parameters<typeof heartbeat.wakeup>[1]>();
       const assigneeId = currentIssue.assigneeAgentId;
-      if (assigneeId) {
+      // Skip waking the assignee if the comment author IS the assignee agent.
+      // This prevents an infinite loop: agent completes task → posts comment →
+      // comment wakes assignee → agent runs again → posts comment → …
+      const commentAuthorIsAssignee = actor.actorType === "agent" && actor.agentId === assigneeId;
+      if (assigneeId && !commentAuthorIsAssignee) {
         if (reopened) {
           wakeups.set(assigneeId, {
             source: "automation",
@@ -879,6 +885,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
       for (const mentionedId of mentionedIds) {
         if (wakeups.has(mentionedId)) continue;
+        // Skip self-mention wake: don't let an agent wake itself via @-mention
+        if (actor.actorType === "agent" && actor.agentId === mentionedId) continue;
         wakeups.set(mentionedId, {
           source: "automation",
           triggerDetail: "system",
