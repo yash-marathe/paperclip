@@ -23,7 +23,7 @@ import { CopyText } from "../components/CopyText";
 import { EntityRow } from "../components/EntityRow";
 import { Identity } from "../components/Identity";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { formatCents, formatDate, relativeTime, formatTokens } from "../lib/utils";
+import { formatCents, formatDate, relativeTime, formatTokens, asRecord, usageNumber, runMetrics } from "../lib/utils";
 import { cn } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -179,44 +179,7 @@ function parseAgentDetailView(value: string | null): AgentDetailView {
   return "overview";
 }
 
-function usageNumber(usage: Record<string, unknown> | null, ...keys: string[]) {
-  if (!usage) return 0;
-  for (const key of keys) {
-    const value = usage[key];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-  }
-  return 0;
-}
-
-function runMetrics(run: HeartbeatRun) {
-  const usage = (run.usageJson ?? null) as Record<string, unknown> | null;
-  const result = (run.resultJson ?? null) as Record<string, unknown> | null;
-  const input = usageNumber(usage, "inputTokens", "input_tokens");
-  const output = usageNumber(usage, "outputTokens", "output_tokens");
-  const cached = usageNumber(
-    usage,
-    "cachedInputTokens",
-    "cached_input_tokens",
-    "cache_read_input_tokens",
-  );
-  const cost =
-    usageNumber(usage, "costUsd", "cost_usd", "total_cost_usd") ||
-    usageNumber(result, "total_cost_usd", "cost_usd", "costUsd");
-  return {
-    input,
-    output,
-    cached,
-    cost,
-    totalTokens: input + output,
-  };
-}
-
 type RunLogChunk = { ts: string; stream: "stdout" | "stderr" | "system"; chunk: string };
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
-}
 
 function asNonEmptyString(value: unknown): string | null {
   if (typeof value !== "string") return null;

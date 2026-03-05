@@ -72,3 +72,45 @@ export function projectRouteRef(project: { id: string; urlKey?: string | null; n
 export function projectUrl(project: { id: string; urlKey?: string | null; name?: string | null }): string {
   return `/projects/${projectRouteRef(project)}`;
 }
+
+// ── Shared data-extraction utilities ────────────────────────────────────
+
+/** Safely cast an unknown value to a plain record, or null if not an object. */
+export function asRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+/** Extract the first numeric value from a record matching any of the given keys. */
+export function usageNumber(usage: Record<string, unknown> | null, ...keys: string[]): number {
+  if (!usage) return 0;
+  for (const key of keys) {
+    const value = usage[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
+/** Truncate text to a maximum length, adding an ellipsis if truncated. */
+export function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1) + "\u2026";
+}
+
+/** Extract run token/cost metrics from untyped usage and result JSON. */
+export function runMetrics(run: { usageJson?: Record<string, unknown> | null; resultJson?: Record<string, unknown> | null }) {
+  const usage = (run.usageJson ?? null) as Record<string, unknown> | null;
+  const result = (run.resultJson ?? null) as Record<string, unknown> | null;
+  const input = usageNumber(usage, "inputTokens", "input_tokens");
+  const output = usageNumber(usage, "outputTokens", "output_tokens");
+  const cached = usageNumber(
+    usage,
+    "cachedInputTokens",
+    "cached_input_tokens",
+    "cache_read_input_tokens",
+  );
+  const cost =
+    usageNumber(usage, "costUsd", "cost_usd", "total_cost_usd") ||
+    usageNumber(result, "total_cost_usd", "cost_usd", "costUsd");
+  return { input, output, cached, cost, totalTokens: input + output };
+}

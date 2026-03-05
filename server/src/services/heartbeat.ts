@@ -480,28 +480,9 @@ export function heartbeatService(db: Db) {
     lastRunId: string | null;
     lastError: string | null;
   }) {
-    const existing = await getTaskSession(
-      input.companyId,
-      input.agentId,
-      input.adapterType,
-      input.taskKey,
-    );
-    if (existing) {
-      return db
-        .update(agentTaskSessions)
-        .set({
-          sessionParamsJson: input.sessionParamsJson,
-          sessionDisplayId: input.sessionDisplayId,
-          lastRunId: input.lastRunId,
-          lastError: input.lastError,
-          updatedAt: new Date(),
-        })
-        .where(eq(agentTaskSessions.id, existing.id))
-        .returning()
-        .then((rows) => rows[0] ?? null);
-    }
-
-    return db
+    // Atomic upsert using INSERT ... ON CONFLICT DO UPDATE to avoid the
+    // race condition of SELECT-then-INSERT/UPDATE under concurrent requests.
+    const rows = await db
       .insert(agentTaskSessions)
       .values({
         companyId: input.companyId,
@@ -513,8 +494,23 @@ export function heartbeatService(db: Db) {
         lastRunId: input.lastRunId,
         lastError: input.lastError,
       })
-      .returning()
-      .then((rows) => rows[0] ?? null);
+      .onConflictDoUpdate({
+        target: [
+          agentTaskSessions.companyId,
+          agentTaskSessions.agentId,
+          agentTaskSessions.adapterType,
+          agentTaskSessions.taskKey,
+        ],
+        set: {
+          sessionParamsJson: input.sessionParamsJson,
+          sessionDisplayId: input.sessionDisplayId,
+          lastRunId: input.lastRunId,
+          lastError: input.lastError,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return rows[0] ?? null;
   }
 
   async function clearTaskSessions(

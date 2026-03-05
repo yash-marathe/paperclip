@@ -1,5 +1,6 @@
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@paperclipai/adapter-utils";
 import { asNumber, asString, parseObject } from "@paperclipai/adapter-utils/server-utils";
+import { assertSafeOutboundUrl } from "@paperclipai/adapter-utils/ssrf-guard";
 import { parseOpenClawResponse } from "./parse.js";
 
 function nonEmpty(value: unknown): string | null {
@@ -67,6 +68,20 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       commandArgs: [method, url],
       context,
     });
+  }
+
+  try {
+    await assertSafeOutboundUrl(url);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await onLog("stderr", `[openclaw] SSRF blocked: ${message}\n`);
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: `SSRF blocked: ${message}`,
+      errorCode: "ssrf_blocked",
+    };
   }
 
   await onLog("stdout", `[openclaw] invoking ${method} ${url}\n`);
