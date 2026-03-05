@@ -44,7 +44,13 @@ function headersFromExpressRequest(req: Request): Headers {
 
 export function createBetterAuthInstance(db: Db, config: Config): BetterAuthInstance {
   const baseUrl = config.authBaseUrlMode === "explicit" ? config.authPublicBaseUrl : undefined;
-  const secret = process.env.BETTER_AUTH_SECRET ?? process.env.PAPERCLIP_AGENT_JWT_SECRET ?? "paperclip-dev-secret";
+  const secret = process.env.BETTER_AUTH_SECRET ?? process.env.PAPERCLIP_AGENT_JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "BetterAuth secret is required in authenticated deployment mode. " +
+      "Set BETTER_AUTH_SECRET or PAPERCLIP_AGENT_JWT_SECRET (generate one with: openssl rand -hex 32).",
+    );
+  }
 
   const authConfig = {
     baseURL: baseUrl,

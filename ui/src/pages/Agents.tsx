@@ -19,21 +19,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Bot, Plus, List, GitBranch, SlidersHorizontal } from "lucide-react";
 import type { Agent } from "@paperclipai/shared";
-
-const adapterLabels: Record<string, string> = {
-  claude_local: "Claude",
-  codex_local: "Codex",
-  opencode_local: "OpenCode",
-  openclaw: "OpenClaw",
-  process: "Process",
-  http: "HTTP",
-};
-
-const roleLabels: Record<string, string> = {
-  ceo: "CEO", cto: "CTO", cmo: "CMO", cfo: "CFO",
-  engineer: "Engineer", designer: "Designer", pm: "PM",
-  qa: "QA", devops: "DevOps", researcher: "Researcher", general: "General",
-};
+import { adapterLabels, roleLabels } from "../components/agent-config-primitives";
 
 type FilterTab = "all" | "active" | "paused" | "error";
 

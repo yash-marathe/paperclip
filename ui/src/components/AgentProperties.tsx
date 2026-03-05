@@ -8,21 +8,12 @@ import { StatusBadge } from "./StatusBadge";
 import { Identity } from "./Identity";
 import { formatDate, agentUrl } from "../lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { adapterLabels } from "./agent-config-primitives";
 
 interface AgentPropertiesProps {
   agent: Agent;
   runtimeState?: AgentRuntimeState;
 }
-
-const adapterLabels: Record<string, string> = {
-  claude_local: "Claude (local)",
-  codex_local: "Codex (local)",
-  opencode_local: "OpenCode (local)",
-  openclaw: "OpenClaw",
-  cursor: "Cursor",
-  process: "Process",
-  http: "HTTP",
-};
 
 function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (

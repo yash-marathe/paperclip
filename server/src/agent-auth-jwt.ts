@@ -124,8 +124,10 @@ export function verifyLocalAgentJwt(token: string): LocalAgentJwtClaims | null {
 
   const issuer = typeof claims.iss === "string" ? claims.iss : undefined;
   const audience = typeof claims.aud === "string" ? claims.aud : undefined;
-  if (issuer && issuer !== config.issuer) return null;
-  if (audience && audience !== config.audience) return null;
+  // Require iss and aud claims — reject tokens that omit them to prevent
+  // cross-context token reuse (e.g. a token minted for a different service).
+  if (!issuer || issuer !== config.issuer) return null;
+  if (!audience || audience !== config.audience) return null;
 
   return {
     sub,

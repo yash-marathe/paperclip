@@ -8,22 +8,13 @@ import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { AGENT_ADAPTER_TYPES } from "@paperclipai/shared";
 import type { AgentAdapterType, JoinRequest } from "@paperclipai/shared";
+import { adapterLabels } from "../components/agent-config-primitives";
 
 type JoinType = "human" | "agent";
 const joinAdapterOptions: AgentAdapterType[] = [
   "openclaw",
   ...AGENT_ADAPTER_TYPES.filter((type): type is Exclude<AgentAdapterType, "openclaw"> => type !== "openclaw"),
 ];
-
-const adapterLabels: Record<string, string> = {
-  claude_local: "Claude (local)",
-  codex_local: "Codex (local)",
-  opencode_local: "OpenCode (local)",
-  openclaw: "OpenClaw",
-  cursor: "Cursor",
-  process: "Process",
-  http: "HTTP",
-};
 
 const ENABLED_INVITE_ADAPTERS = new Set(["claude_local", "codex_local", "opencode_local"]);
 

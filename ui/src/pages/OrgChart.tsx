@@ -9,6 +9,7 @@ import { agentUrl } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
+import { adapterLabels, roleLabels } from "../components/agent-config-primitives";
 import { Network } from "lucide-react";
 import type { Agent } from "@paperclipai/shared";
 
@@ -115,14 +116,7 @@ function collectEdges(nodes: LayoutNode[]): Array<{ parent: LayoutNode; child: L
 
 // ── Status dot colors (raw hex for SVG) ─────────────────────────────────
 
-const adapterLabels: Record<string, string> = {
-  claude_local: "Claude",
-  codex_local: "Codex",
-  opencode_local: "OpenCode",
-  openclaw: "OpenClaw",
-  process: "Process",
-  http: "HTTP",
-};
+// adapterLabels imported from agent-config-primitives at top of file
 
 const statusDotColor: Record<string, string> = {
   running: "#22d3ee",
@@ -420,11 +414,7 @@ export function OrgChart() {
   );
 }
 
-const roleLabels: Record<string, string> = {
-  ceo: "CEO", cto: "CTO", cmo: "CMO", cfo: "CFO",
-  engineer: "Engineer", designer: "Designer", pm: "PM",
-  qa: "QA", devops: "DevOps", researcher: "Researcher", general: "General",
-};
+// roleLabels imported from agent-config-primitives at top of file
 
 function roleLabel(role: string): string {
   return roleLabels[role] ?? role;
